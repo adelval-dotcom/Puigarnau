@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<link rel="manifest" id="pwa-manifest">
+<title>Casa Monitor</title>
+<style>
+:root{
+  --bg:#0a0c14;--bg2:#131620;--bg3:#1c2030;--bg4:#242840;
+  --border:#2a2f48;--border2:#353c5c;
+  --text:#dde1f5;--muted:#6b74a8;--dim:#3d4468;
+  --green:#3ecf6e;--amber:#f5a623;--red:#f04f4f;--blue:#4d8ef7;
+  --purple:#9b7ef7;
+  --st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  font-size:15px;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* App shell */
+.app{display:flex;flex-direction:column;height:100%;
+  padding-top:var(--st);padding-bottom:var(--sb)}
+
+/* ── Header ── */
+.hdr{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:12px 16px 10px}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.logo{font-size:18px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.logo-icon{font-size:20px}
+.logo-text span{color:var(--blue)}
+.hdr-actions{display:flex;gap:6px}
+.icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;
+  width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:17px;transition:background .15s}
+.icon-btn:active{background:var(--bg3)}
+
+/* Status pills */
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:5px;transition:all .2s}
+.pill .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pill.ok    {background:#0d2e1c;color:var(--green);border:1px solid #1a4a2e}
+.pill.ok .dot{background:var(--green);box-shadow:0 0 5px var(--green)}
+.pill.fail  {background:#2e0d0d;color:var(--red);border:1px solid #4a1a1a}
+.pill.fail .dot{background:var(--red)}
+.pill.warn  {background:#2e200d;color:var(--amber);border:1px solid #4a3a1a}
+.pill.warn .dot{background:var(--amber)}
+.pill.dim   {background:var(--bg3);color:var(--dim);border:1px solid var(--border)}
+.pill.dim .dot{background:var(--dim)}
+.pill.purple{background:#160d2e;color:var(--purple);border:1px solid #2a1a4a}
+.pill.purple .dot{background:var(--purple);box-shadow:0 0 5px var(--purple)}
+
+/* ── Config drawer ── */
+.drawer{flex-shrink:0;overflow:hidden;max-height:0;
+  transition:max-height .3s cubic-bezier(.4,0,.2,1);
+  background:var(--bg3);border-bottom:1px solid var(--border)}
+.drawer.open{max-height:220px}
+.drawer-inner{padding:14px 16px}
+.drawer-title{font-size:11px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--muted);margin-bottom:12px}
+.field{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.field label{font-size:12px;color:var(--muted);min-width:70px;flex-shrink:0}
+.field input{flex:1;background:var(--bg2);border:1px solid var(--border2);
+  border-radius:9px;padding:8px 12px;color:var(--text);font-size:13px;
+  font-family:monospace;outline:none;transition:border .15s}
+.field input:focus{border-color:var(--blue)}
+.field input::placeholder{color:var(--dim)}
+.connect-btn{width:100%;padding:10px;border-radius:10px;
+  background:var(--blue);color:#fff;border:none;
+  font-size:14px;font-weight:600;cursor:pointer;
+  transition:opacity .15s;margin-top:4px}
+.connect-btn:active{opacity:.8}
+
+/* ── Alert banner ── */
+.alert-wrap{flex-shrink:0;overflow:hidden;
+  max-height:0;opacity:0;
+  transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s}
+.alert-wrap.show{max-height:90px;opacity:1}
+.alert{margin:8px 12px 0;padding:12px 14px;border-radius:14px;
+  display:flex;align-items:center;gap:12px}
+.alert.timbre{background:#221500;border:1px solid #6b4400}
+.alert.pir   {background:#0a1e12;border:1px solid #1a5a30}
+.alert.boot  {background:#0a1020;border:1px solid #1a3060}
+.alert.def   {background:var(--bg3);border:1px solid var(--border2)}
+.alert-icon{font-size:28px;flex-shrink:0;line-height:1}
+.alert-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.alert-sub  {font-size:11px;color:var(--muted);margin-top:2px}
+.alert-time{margin-left:auto;font-size:11px;color:var(--dim);
+  flex-shrink:0;text-align:right;min-width:48px}
+
+/* ── Offline bar ── */
+.offline{flex-shrink:0;overflow:hidden;max-height:0;
+  transition:max-height .25s;background:#2e0d0d;
+  text-align:center;font-size:12px;font-weight:500;color:var(--red)}
+.offline.show{max-height:28px;padding:5px}
+
+/* ── Scroll ── */
+.scroll{flex:1;overflow-y:auto;padding:12px 12px 6px;
+  -webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--bg2);border:1px solid var(--border);
+  border-radius:12px;padding:12px 8px;text-align:center}
+.stat-val{font-size:24px;font-weight:800;line-height:1;letter-spacing:-1px}
+.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;
+  letter-spacing:.05em;color:var(--dim);margin-top:4px}
+.stat.t   .stat-val{color:var(--amber)}
+.stat.p   .stat-val{color:var(--green)}
+.stat.tot .stat-val{color:var(--blue)}
+
+/* Notif prompt */
+.notif-prompt{display:none;margin-bottom:12px;padding:12px 14px;
+  border-radius:12px;background:#160d2e;border:1px solid #2a1a4a;
+  cursor:pointer;transition:opacity .15s}
+.notif-prompt.show{display:flex;align-items:center;gap:10px}
+.notif-prompt:active{opacity:.8}
+.np-text{flex:1;font-size:13px;color:var(--purple)}
+.np-text strong{display:block;font-weight:600;margin-bottom:2px}
+.np-text span{font-size:11px;opacity:.7}
+.np-arrow{color:var(--purple);font-size:18px}
+
+/* Section header */
+.sec-hdr{font-size:10px;font-weight:700;text-transform:uppercase;
+  letter-spacing:.07em;color:var(--dim);margin-bottom:8px;
+  display:flex;align-items:center;gap:8px}
+.sec-hdr::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Event list */
+.ev-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.ev{background:var(--bg2);border:1px solid var(--border);
+  border-radius:11px;padding:10px 12px;
+  display:flex;align-items:center;gap:10px;
+  animation:slide-in .2s ease}
+@keyframes slide-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ev-icon{font-size:22px;flex-shrink:0;line-height:1}
+.ev-body{flex:1;min-width:0}
+.ev-tipo{font-size:13px;font-weight:700;letter-spacing:-.1px}
+.ev-meta{font-size:11px;color:var(--dim);margin-top:2px;
+  display:flex;align-items:center;gap:6px}
+.rssi-badge{font-size:10px;font-weight:600;padding:1px 6px;
+  border-radius:7px;background:var(--bg3);color:var(--muted)}
+.ev-right{text-align:right;flex-shrink:0}
+.ev-time{font-size:12px;color:var(--muted);font-weight:500}
+.ev-bat{font-size:10px;color:var(--dim);margin-top:2px}
+.empty{text-align:center;padding:32px 16px;color:var(--dim);
+  font-size:13px;line-height:2}
+.empty strong{display:block;font-size:28px;margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="hdr">
+    <div class="hdr-top">
+      <div class="logo">
+        <span class="logo-icon">🏠</span>
+        <span class="logo-text">Casa <span>Monitor</span></span>
+      </div>
+      <div class="hdr-actions">
+        <button class="icon-btn" id="cfg-btn" onclick="toggleDrawer()" title="Configurar">⚙</button>
+      </div>
+    </div>
+    <div class="pills" id="pills">
+      <div class="pill dim" id="p-conn"><div class="dot"></div><span>Configurar</span></div>
+      <div class="pill dim" id="p-lora"><div class="dot"></div><span>LoRa —</span></div>
+      <div class="pill dim" id="p-sw"  ><div class="dot"></div><span>BG —</span></div>
+    </div>
+  </div>
+
+  <div class="drawer" id="drawer">
+    <div class="drawer-inner">
+      <div class="drawer-title">Credenciales MQTT</div>
+      <div class="field">
+        <label>Usuario</label>
+        <input id="f-user" type="text" placeholder="usuario hivemq" autocomplete="username" spellcheck="false">
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input id="f-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="connect-btn" onclick="guardar()">Conectar</button>
+    </div>
+  </div>
+
+  <div class="offline" id="offline">Sin conexión — reintentando...</div>
+
+  <div class="alert-wrap" id="alert-wrap">
+    <div class="alert def" id="alert-box">
+      <div class="alert-icon" id="a-icon"></div>
+      <div>
+        <div class="alert-title" id="a-title"></div>
+        <div class="alert-sub"   id="a-sub"></div>
+      </div>
+      <div class="alert-time" id="a-time"></div>
+    </div>
+  </div>
+
+  <div class="scroll">
+    <div class="stats">
+      <div class="stat tot"><div class="stat-val" id="s-tot">0</div><div class="stat-lbl">Total</div></div>
+      <div class="stat p"  ><div class="stat-val" id="s-pir">0</div><div class="stat-lbl">PIR</div></div>
+      <div class="stat t"  ><div class="stat-val" id="s-tmb">0</div><div class="stat-lbl">Timbre</div></div>
+    </div>
+
+    <div class="notif-prompt" id="notif-prompt" onclick="pedirNotif()">
+      <div style="font-size:24px">🔔</div>
+      <div class="np-text">
+        <strong>Activar notificaciones</strong>
+        <span>Recibe alertas aunque la app esté cerrada</span>
+      </div>
+      <div class="np-arrow">›</div>
+    </div>
+
+    <div class="sec-hdr">Eventos recientes</div>
+    <div class="ev-list" id="ev-list">
+      <div class="empty">
+        <strong>📡</strong>
+        Introduce tus credenciales con el botón ⚙<br>
+        y los eventos aparecerán aquí en tiempo real.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+<script>
+// ── Configuración fija ────────────────────────────────────
+const MQTT_HOST  = '220cc91c08524062b3100df9b9b4e451.s1.eu.hivemq.cloud';
+const MQTT_PORT  = 8884;
+const TOPIC_EVT  = 'casa/puerta/evento';
+const TOPIC_CMD  = 'casa/puerta/cmd';
+const TOPIC_STA  = 'casa/centralita/status';
+const STORAGE_KEY = 'casa_creds_v2';
+
+// ── Info de tipos ─────────────────────────────────────────
+const TIPOS = {
+  TIMBRE:   {icon:'🔔',label:'Timbre',    cls:'timbre',color:'#f5a623'},
+  PIR:      {icon:'👤',label:'Presencia', cls:'pir',   color:'#3ecf6e'},
+  VEHICULO: {icon:'🚗',label:'Vehículo',  cls:'pir',   color:'#3ecf6e'},
+  BOOT:     {icon:'🔌',label:'Reinicio',  cls:'boot',  color:'#4d8ef7'},
+  HEARTBEAT:{icon:'💚',label:'Latido',    cls:'def',   color:'#3ecf6e'},
+};
+const T = k => TIPOS[k] || {icon:'📡',label:k,cls:'def',color:'#6b74a8'};
+
+// ── Estado ────────────────────────────────────────────────
+let client    = null;
+let events    = [];
+let cnt       = {tot:0, pir:0, tmb:0};
+let alertTmr  = null;
+let creds     = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+let swReg     = null;
+
+// ── PWA Manifest dinámico ─────────────────────────────────
+(function(){
+  const m = {
+    name:'Casa Monitor',short_name:'Casa',start_url:'./',
+    display:'standalone',background_color:'#0a0c14',theme_color:'#0a0c14',
+    icons:[{
+      src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%230a0c14'/%3E%3Ctext y='140' font-size='120' text-anchor='middle' x='96'%3E%F0%9F%8F%A0%3C/text%3E%3C/svg%3E",
+      sizes:'192x192',type:'image/svg+xml'
+    }]
+  };
+  const url = URL.createObjectURL(new Blob([JSON.stringify(m)],{type:'application/json'}));
+  document.getElementById('pwa-manifest').href = url;
+})();
+
+// ── Drawer config ─────────────────────────────────────────
+function toggleDrawer(){
+  const d = document.getElementById('drawer');
+  const open = d.classList.toggle('open');
+  if (open && creds) {
+    document.getElementById('f-user').value = creds.user;
+    document.getElementById('f-pass').value = creds.pass;
+  }
+}
+
+function guardar(){
+  const user = document.getElementById('f-user').value.trim();
+  const pass = document.getElementById('f-pass').value;
+  if (!user || !pass){ alert('Rellena usuario y contraseña'); return; }
+  creds = { user, pass };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(creds));
+  document.getElementById('drawer').classList.remove('open');
+  if (client) client.end(true);
+  mqttConectar();
+  swEnviarCredenciales();
+}
+
+// ── MQTT conexión principal (UI en primer plano) ──────────
+function mqttConectar(){
+  if (!creds) {
+    setPill('p-conn','warn','Configurar ⚙');
+    document.getElementById('drawer').classList.add('open');
+    return;
+  }
+
+  setPill('p-conn','dim','Conectando...');
+  const url = `wss://${MQTT_HOST}:${MQTT_PORT}/mqtt`;
+  const id  = 'app_fg_' + Math.random().toString(16).slice(2,8);
+
+  client = mqtt.connect(url, {
+    clientId: id,
+    username: creds.user,
+    password: creds.pass,
+    clean: true,
+    reconnectPeriod: 4000,
+    connectTimeout: 12000,
+    rejectUnauthorized: false,
+  });
+
+  client.on('connect', () => {
+    setPill('p-conn','ok','Conectado');
+    setOffline(false);
+    client.subscribe([TOPIC_EVT, TOPIC_STA, TOPIC_CMD]);
+  });
+
+  client.on('message', (topic, payload) => {
+    try {
+      const d = JSON.parse(payload.toString());
+      if (topic === TOPIC_STA) { setPill('p-lora','ok','Centralita OK'); return; }
+      manejar(d);
+    } catch(e){}
+  });
+
+  client.on('offline', () => { setPill('p-conn','fail','Sin conexión'); setOffline(true); });
+  client.on('error',   () => { setPill('p-conn','fail','Error MQTT'); });
+  client.on('reconnect',()=> { setPill('p-conn','dim','Reconectando...'); });
+}
+
+// ── Manejar evento ────────────────────────────────────────
+function manejar(d){
+  const {tipo, nodo, rssi, bat} = d;
+
+  if (tipo === 'HEARTBEAT') return;
+
+  if (rssi) setPill('p-lora','ok',`LoRa ${rssi}dBm`);
+
+  cnt.tot++;
+  if (tipo==='PIR'||tipo==='VEHICULO') cnt.pir++;
+  if (tipo==='TIMBRE') cnt.tmb++;
+  actualizarStats();
+
+  events.unshift({...d, localTs: Date.now()});
+  if (events.length > 60) events.pop();
+  renderEventos();
+  mostrarAlerta(d);
+
+  // Notificación del sistema (si la app está en primer plano)
+  if (document.visibilityState === 'hidden' &&
+      Notification.permission === 'granted') {
+    enviarNotif(d);
+  }
+}
+
+// ── Banner de alerta ──────────────────────────────────────
+function mostrarAlerta(d){
+  const info = T(d.tipo);
+  const hora = new Date().toLocaleTimeString('es',
+    {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+
+  document.getElementById('a-icon').textContent  = info.icon;
+  document.getElementById('a-title').textContent = info.label.toUpperCase();
+  document.getElementById('a-sub').textContent   =
+    `${d.nodo} · RSSI ${d.rssi}dBm · Bat ${d.bat}%`;
+  document.getElementById('a-time').textContent  = hora;
+  document.getElementById('alert-box').className = 'alert ' + info.cls;
+
+  const w = document.getElementById('alert-wrap');
+  w.classList.remove('show');
+  requestAnimationFrame(() => { w.classList.add('show'); });
+
+  if (navigator.vibrate){
+    navigator.vibrate(d.tipo==='TIMBRE'
+      ? [200,100,200,100,400]
+      : [150,80,150]);
+  }
+
+  clearTimeout(alertTmr);
+  alertTmr = setTimeout(() =>
+    document.getElementById('alert-wrap').classList.remove('show'), 8000);
+}
+
+// ── Render lista eventos ──────────────────────────────────
+function renderEventos(){
+  const el = document.getElementById('ev-list');
+  if (!events.length){
+    el.innerHTML = '<div class="empty"><strong>📡</strong>Sin eventos aún.</div>';
+    return;
+  }
+  el.innerHTML = events.slice(0,40).map(e => {
+    const info = T(e.tipo);
+    const hora = new Date(e.localTs)
+      .toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    return `<div class="ev">
+      <div class="ev-icon">${info.icon}</div>
+      <div class="ev-body">
+        <div class="ev-tipo" style="color:${info.color}">${info.label}</div>
+        <div class="ev-meta">
+          <span>${e.nodo}</span>
+          <span class="rssi-badge">${e.rssi}dBm</span>
+        </div>
+      </div>
+      <div class="ev-right">
+        <div class="ev-time">${hora}</div>
+        <div class="ev-bat">🔋${e.bat}%</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function actualizarStats(){
+  document.getElementById('s-tot').textContent = cnt.tot;
+  document.getElementById('s-pir').textContent = cnt.pir;
+  document.getElementById('s-tmb').textContent = cnt.tmb;
+}
+
+// ── Helpers UI ────────────────────────────────────────────
+function setPill(id, cls, txt){
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'pill ' + cls;
+  el.innerHTML = `<div class="dot"></div><span>${txt}</span>`;
+}
+function setOffline(v){
+  document.getElementById('offline').classList.toggle('show', v);
+}
+
+// ── Notificaciones del sistema ────────────────────────────
+function comprobarNotif(){
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default')
+    document.getElementById('notif-prompt').classList.add('show');
+  else if (Notification.permission === 'granted')
+    document.getElementById('notif-prompt').classList.remove('show');
+}
+
+function pedirNotif(){
+  Notification.requestPermission().then(p => {
+    if (p === 'granted'){
+      document.getElementById('notif-prompt').classList.remove('show');
+      new Notification('Casa Monitor activado 🏠',{
+        body:'Recibirás alertas en tiempo real, incluso con la app cerrada.',
+        tag:'casa-init', icon: getIcon('🏠'),
+      });
+    }
+  });
+}
+
+function enviarNotif(d){
+  if (Notification.permission !== 'granted') return;
+  const info = T(d.tipo);
+  new Notification(`${info.icon} ${info.label}`, {
+    body:`${d.nodo}  ·  RSSI ${d.rssi}dBm  ·  Batería ${d.bat}%\n${new Date().toLocaleTimeString('es')}`,
+    tag: 'casa-' + d.tipo,
+    renotify: true,
+    icon: getIcon(info.icon),
+    badge: getIcon('🏠'),
+    silent: false,
+  });
+}
+
+function getIcon(emoji){
+  return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230a0c14'/><text y='74' font-size='62' text-anchor='middle' x='50'>${encodeURIComponent(emoji)}</text></svg>`;
+}
+
+// ── Service Worker (background MQTT + notificaciones) ─────
+async function registrarSW(){
+  if (!('serviceWorker' in navigator)) {
+    setPill('p-sw','fail','SW no soportado');
+    return;
+  }
+  try {
+    // El service worker debe estar en la misma carpeta
+    swReg = await navigator.serviceWorker.register('./sw.js', {scope:'./'});
+    setPill('p-sw','ok','BG activo');
+    console.log('SW registrado:', swReg.scope);
+
+    // Escuchar mensajes del SW (eventos recibidos en background)
+    navigator.serviceWorker.addEventListener('message', e => {
+      if (e.data?.type === 'EVENTO') manejar(e.data.payload);
+      if (e.data?.type === 'SW_READY') swEnviarCredenciales();
+    });
+
+    // Enviar credenciales al SW activo
+    await navigator.serviceWorker.ready;
+    swEnviarCredenciales();
+
+  } catch(err){
+    setPill('p-sw','fail','SW error');
+    console.error('SW:', err);
+  }
+}
+
+function swEnviarCredenciales(){
+  if (!creds || !navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.controller.postMessage({
+    type: 'INIT',
+    host: MQTT_HOST,
+    port: MQTT_PORT,
+    user: creds.user,
+    pass: creds.pass,
+  });
+  setPill('p-sw','purple','BG conectando...');
+}
+
+// Cuando el SW se activa y toma control, enviarle creds
+navigator.serviceWorker?.addEventListener('controllerchange', () => {
+  swEnviarCredenciales();
+});
+
+// ── Visibilidad: al volver a primer plano ─────────────────
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden){
+    if (client && !client.connected) mqttConectar();
+  }
+});
+
+// ── Init ──────────────────────────────────────────────────
+comprobarNotif();
+registrarSW();
+if (creds) mqttConectar();
+else { setPill('p-conn','warn','Configurar ⚙'); document.getElementById('drawer').classList.add('open'); }
+</script>
+</body>
+</html>
