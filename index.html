@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0c14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<title>Casa Monitor</title>
+<style>
+:root{--bg:#0a0c14;--bg2:#131620;--bg3:#1c2030;--border:#2a2f48;--border2:#353c5c;
+--text:#dde1f5;--muted:#6b74a8;--dim:#3d4468;--green:#3ecf6e;--amber:#f5a623;
+--red:#f04f4f;--blue:#4d8ef7;--purple:#9b7ef7;
+--st:env(safe-area-inset-top,0px);--sb:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--text);
+font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+font-size:15px;overflow:hidden;-webkit-font-smoothing:antialiased}
+.app{display:flex;flex-direction:column;height:100%;padding-top:var(--st);padding-bottom:var(--sb)}
+.hdr{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);padding:12px 16px 10px}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:9px}
+.logo{font-size:18px;font-weight:700;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.logo span{color:var(--blue)}
+.hdr-r{display:flex;gap:6px;align-items:center}
+.icon-btn{background:none;border:none;color:var(--muted);cursor:pointer;width:36px;height:36px;
+border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px}
+.icon-btn:active{background:var(--bg3)}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:20px;
+display:inline-flex;align-items:center;gap:5px;transition:all .2s}
+.pill .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.pill.ok{background:#0d2e1c;color:var(--green);border:1px solid #1a4a2e}
+.pill.ok .dot{background:var(--green);box-shadow:0 0 5px var(--green)}
+.pill.fail{background:#2e0d0d;color:var(--red);border:1px solid #4a1a1a}
+.pill.fail .dot{background:var(--red)}
+.pill.warn{background:#2e200d;color:var(--amber);border:1px solid #4a3a1a}
+.pill.warn .dot{background:var(--amber)}
+.pill.dim{background:var(--bg3);color:var(--dim);border:1px solid var(--border)}
+.pill.dim .dot{background:var(--dim)}
+.drawer{flex-shrink:0;overflow:hidden;max-height:0;
+transition:max-height .3s cubic-bezier(.4,0,.2,1);background:var(--bg3);border-bottom:1px solid var(--border)}
+.drawer.open{max-height:320px}
+.d-inner{padding:14px 16px}
+.d-sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;
+color:var(--muted);margin:10px 0 7px;padding-top:10px;border-top:1px solid var(--border)}
+.d-sec:first-child{margin-top:0;padding-top:0;border-top:none}
+.field{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.field label{font-size:12px;color:var(--muted);min-width:68px;flex-shrink:0}
+.field input{flex:1;background:var(--bg2);border:1px solid var(--border2);border-radius:9px;
+padding:7px 11px;color:var(--text);font-size:13px;font-family:monospace;outline:none;transition:border .15s}
+.field input:focus{border-color:var(--blue)}
+.field input::placeholder{color:var(--dim)}
+.btn-row{display:flex;gap:7px;margin-top:6px}
+.btn{flex:1;padding:9px;border-radius:10px;border:none;font-size:13px;font-weight:600;cursor:pointer}
+.btn:active{opacity:.8}
+.btn-blue{background:var(--blue);color:#fff}
+.btn-red{background:var(--bg3);color:var(--red);border:1px solid #4a1a1a}
+.push-card{display:none;margin-bottom:12px;padding:13px 14px;border-radius:13px;
+background:#0d2215;border:1px solid #1a4a2e;cursor:pointer;transition:opacity .15s}
+.push-card.show{display:block}
+.push-card:active{opacity:.8}
+.pc-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.pc-icon{font-size:22px}
+.pc-title{font-size:14px;font-weight:700;color:var(--green)}
+.pc-sub{font-size:12px;color:var(--muted);line-height:1.6}
+.pc-btn{width:100%;margin-top:8px;padding:9px;border-radius:9px;border:none;
+background:var(--green);color:#001a0a;font-size:13px;font-weight:700;cursor:pointer}
+.pc-btn:active{opacity:.8}
+.alert-wrap{flex-shrink:0;overflow:hidden;max-height:0;opacity:0;
+transition:max-height .3s cubic-bezier(.4,0,.2,1),opacity .25s}
+.alert-wrap.show{max-height:90px;opacity:1}
+.alert{margin:8px 12px 0;padding:12px 14px;border-radius:14px;display:flex;align-items:center;gap:12px}
+.alert.timbre{background:#221500;border:1px solid #6b4400}
+.alert.pir{background:#0a1e12;border:1px solid #1a5a30}
+.alert.boot{background:#0a1020;border:1px solid #1a3060}
+.alert.def{background:var(--bg3);border:1px solid var(--border2)}
+.alert-icon{font-size:28px;flex-shrink:0;line-height:1}
+.alert-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.alert-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.alert-time{margin-left:auto;font-size:11px;color:var(--dim);flex-shrink:0}
+.offline{flex-shrink:0;overflow:hidden;max-height:0;transition:max-height .25s;
+background:#2e0d0d;text-align:center;font-size:12px;font-weight:500;color:var(--red)}
+.offline.show{max-height:28px;padding:5px}
+.scroll{flex:1;overflow-y:auto;padding:12px 12px 6px;-webkit-overflow-scrolling:touch}
+.scroll::-webkit-scrollbar{display:none}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.stat{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 8px;text-align:center}
+.stat-val{font-size:24px;font-weight:800;line-height:1;letter-spacing:-1px}
+.stat-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--dim);margin-top:4px}
+.stat.t .stat-val{color:var(--amber)}.stat.p .stat-val{color:var(--green)}.stat.tot .stat-val{color:var(--blue)}
+.list-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.list-hdr span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--dim)}
+.ev-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.ev{background:var(--bg2);border:1px solid var(--border);border-radius:11px;
+padding:10px 12px;display:flex;align-items:center;gap:10px;animation:si .2s ease}
+.ev.new{border-color:var(--border2)}
+@keyframes si{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+.ev-icon{font-size:22px;flex-shrink:0;line-height:1}
+.ev-body{flex:1;min-width:0}
+.ev-tipo{font-size:13px;font-weight:700}
+.ev-meta{font-size:11px;color:var(--dim);margin-top:2px;display:flex;align-items:center;gap:5px}
+.rb{font-size:10px;font-weight:600;padding:1px 5px;border-radius:7px;background:var(--bg3);color:var(--muted)}
+.ev-right{text-align:right;flex-shrink:0}
+.ev-time{font-size:12px;color:var(--muted);font-weight:500}
+.ev-bat{font-size:10px;color:var(--dim);margin-top:1px}
+.ev-ago{font-size:10px;color:var(--dim);margin-top:1px}
+.empty{text-align:center;padding:28px 16px;color:var(--dim);font-size:13px;line-height:2}
+.empty strong{display:block;font-size:26px;margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo">&#127968; Casa <span>Monitor</span></div>
+    <div class="hdr-r">
+      <button class="icon-btn" id="bell-btn" onclick="activarPush()" title="Notificaciones" style="display:none">&#128276;</button>
+      <button class="icon-btn" onclick="toggleDrawer()">&#9881;</button>
+    </div>
+  </div>
+  <div class="pills">
+    <div class="pill dim" id="p-conn"><div class="dot"></div><span>Configurar</span></div>
+    <div class="pill dim" id="p-lora"><div class="dot"></div><span>LoRa &#8212;</span></div>
+    <div class="pill dim" id="p-push"><div class="dot"></div><span>Push &#8212;</span></div>
+  </div>
+</div>
+
+<div class="drawer" id="drawer">
+  <div class="d-inner">
+    <div class="d-sec">MQTT &#8212; HiveMQ Cloud</div>
+    <div class="field"><label>Usuario</label>
+      <input id="f-user" type="text" placeholder="usuario hivemq" autocomplete="username" spellcheck="false"></div>
+    <div class="field"><label>Password</label>
+      <input id="f-pass" type="password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password"></div>
+    <div class="d-sec">Worker URL &#8212; Cloudflare</div>
+    <div class="field"><label>URL</label>
+      <input id="f-worker" type="text" placeholder="https://casa.TU-USER.workers.dev" spellcheck="false"></div>
+    <div class="btn-row">
+      <button class="btn btn-blue" onclick="guardar()">Conectar</button>
+    </div>
+    <div class="btn-row" style="margin-top:6px">
+      <button class="btn btn-red" onclick="borrarTodo()">Borrar historial</button>
+    </div>
+  </div>
+</div>
+
+<div class="offline" id="offline">Sin conexi&#243;n MQTT &#8212; reintentando...</div>
+
+<div class="alert-wrap" id="alert-wrap">
+  <div class="alert def" id="alert-box">
+    <div class="alert-icon" id="a-icon"></div>
+    <div><div class="alert-title" id="a-title"></div><div class="alert-sub" id="a-sub"></div></div>
+    <div class="alert-time" id="a-time"></div>
+  </div>
+</div>
+
+<div class="scroll">
+  <div class="stats">
+    <div class="stat tot"><div class="stat-val" id="s-tot">0</div><div class="stat-lbl">Total</div></div>
+    <div class="stat p">  <div class="stat-val" id="s-pir">0</div><div class="stat-lbl">PIR</div></div>
+    <div class="stat t">  <div class="stat-val" id="s-tmb">0</div><div class="stat-lbl">Timbre</div></div>
+  </div>
+
+  <!-- Card de activación push (solo si no está activo) -->
+  <div class="push-card" id="push-card">
+    <div class="pc-top">
+      <div class="pc-icon">&#128276;</div>
+      <div class="pc-title">Activar notificaciones</div>
+    </div>
+    <div class="pc-sub">Recibe alertas aunque la app est&#233; cerrada o la pantalla apagada.<br>Chrome las gestiona directamente &#8212; sin apps adicionales.</div>
+    <button class="pc-btn" onclick="activarPush()">Activar ahora</button>
+  </div>
+
+  <div class="list-hdr">
+    <span>Eventos recientes</span>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span style="font-size:10px;color:var(--dim)" id="ev-count"></span>
+      <button style="font-size:11px;color:var(--red);cursor:pointer;background:none;border:none;padding:0"
+              onclick="borrarTodo()">Borrar</button>
+    </div>
+  </div>
+  <div class="ev-list" id="ev-list">
+    <div class="empty"><strong>&#128225;</strong>
+    Toca &#9881; e introduce tus credenciales.<br>
+    Los eventos se guardan aunque cierres la app.</div>
+  </div>
+</div>
+</div>
+
+<script src="https://unpkg.com/mqtt@5.3.4/dist/mqtt.min.js"></script>
+<script>
+// ── Config ────────────────────────────────────────────────
+var MQTT_HOST = '220cc91c08524062b3100df9b9b4e451.s1.eu.hivemq.cloud';
+var MQTT_PORT = 8884;
+var TOPIC_EVT = 'casa/puerta/evento';
+var TOPIC_STA = 'casa/centralita/status';
+// VAPID public key (corresponde al worker.js)
+var VAPID_PUB = 'BFza_isM9BQL1Bqu_bUcQUAjV1N5dGOhsFfzN1MRcRjPrPUFSak0dBN3L8qoRz4YJDGMZf7gxMYXmOI7Sx00IsI';
+var KC='casa_creds_v5', KE='casa_events_v3', KW='casa_worker_url';
+var MAX = 150;
+
+var TIPOS = {
+  TIMBRE:   {icon:'&#128276;',label:'Timbre',   cls:'timbre',color:'#f5a623'},
+  PIR:      {icon:'&#128100;',label:'Presencia',cls:'pir',   color:'#3ecf6e'},
+  VEHICULO: {icon:'&#128663;',label:'Veh\u00edculo',cls:'pir',color:'#3ecf6e'},
+  BOOT:     {icon:'&#128268;',label:'Reinicio', cls:'boot',  color:'#4d8ef7'},
+  HEARTBEAT:{icon:'&#128154;',label:'Latido',   cls:'def',   color:'#3ecf6e'},
+};
+var T = function(k){return TIPOS[k]||{icon:'&#128225;',label:k,cls:'def',color:'#6b74a8'};};
+
+var client=null, events=[], cnt={tot:0,pir:0,tmb:0}, alertTmr=null;
+var creds    = JSON.parse(localStorage.getItem(KC)||'null');
+var workerUrl = localStorage.getItem(KW)||'';
+var swReg    = null;
+
+// ── Cargar historial ──────────────────────────────────────
+function cargarEventos(){
+  try{
+    var raw=localStorage.getItem(KE);
+    if(!raw)return;
+    events=JSON.parse(raw);
+    cnt={tot:0,pir:0,tmb:0};
+    events.forEach(function(e){
+      cnt.tot++;
+      if(e.tipo==='PIR'||e.tipo==='VEHICULO')cnt.pir++;
+      if(e.tipo==='TIMBRE')cnt.tmb++;
+    });
+    actualizarStats();renderEventos();
+  }catch(e){}
+}
+function guardarEventos(){
+  try{localStorage.setItem(KE,JSON.stringify(events.slice(0,MAX)));}catch(e){}
+}
+function borrarTodo(){
+  if(!confirm('Borrar todos los eventos guardados?'))return;
+  events=[];cnt={tot:0,pir:0,tmb:0};
+  localStorage.removeItem(KE);
+  actualizarStats();renderEventos();
+  document.getElementById('drawer').classList.remove('open');
+}
+
+// ── Config drawer ─────────────────────────────────────────
+function toggleDrawer(){
+  var d=document.getElementById('drawer');
+  if(d.classList.toggle('open')&&creds){
+    document.getElementById('f-user').value=creds.user||'';
+    document.getElementById('f-pass').value=creds.pass||'';
+    document.getElementById('f-worker').value=workerUrl||'';
+  }
+}
+function guardar(){
+  var user=document.getElementById('f-user').value.trim();
+  var pass=document.getElementById('f-pass').value;
+  var wurl=document.getElementById('f-worker').value.trim().replace(/\/$/,'');
+  if(!user||!pass){alert('Rellena usuario y contrase\u00f1a');return;}
+  creds={user:user,pass:pass};workerUrl=wurl;
+  localStorage.setItem(KC,JSON.stringify(creds));
+  if(wurl)localStorage.setItem(KW,wurl);
+  document.getElementById('drawer').classList.remove('open');
+  if(client)client.end(true);
+  mqttConectar();
+}
+
+// ── MQTT ──────────────────────────────────────────────────
+function mqttConectar(){
+  if(!creds){setPill('p-conn','warn','Configurar \u2699');document.getElementById('drawer').classList.add('open');return;}
+  setPill('p-conn','dim','Conectando...');
+  var id='fg_'+Math.random().toString(16).slice(2,8);
+  client=mqtt.connect('wss://'+MQTT_HOST+':'+MQTT_PORT+'/mqtt',{
+    clientId:id,username:creds.user,password:creds.pass,
+    clean:true,reconnectPeriod:5000,connectTimeout:15000,rejectUnauthorized:false
+  });
+  client.on('connect',function(){
+    setPill('p-conn','ok','Conectado');setOffline(false);
+    client.subscribe([TOPIC_EVT,TOPIC_STA]);
+  });
+  client.on('message',function(topic,payload){
+    try{
+      var d=JSON.parse(payload.toString());
+      if(topic===TOPIC_STA){setPill('p-lora','ok','Centralita OK');return;}
+      manejar(d,true);
+    }catch(e){}
+  });
+  client.on('offline',function(){setPill('p-conn','fail','Sin conexi\u00f3n');setOffline(true);});
+  client.on('error',function(){setPill('p-conn','fail','Error MQTT');});
+  client.on('reconnect',function(){setPill('p-conn','dim','Reconectando...');});
+}
+
+// ── Manejar evento ────────────────────────────────────────
+function manejar(d,esNuevo){
+  if(d.tipo==='HEARTBEAT')return;
+  if(d.rssi)setPill('p-lora','ok','LoRa '+d.rssi+'dBm');
+  var ev=Object.assign({},d,{localTs:Date.now(),esNuevo:esNuevo===true});
+  events.unshift(ev);if(events.length>MAX)events.pop();
+  guardarEventos();
+  cnt.tot++;
+  if(d.tipo==='PIR'||d.tipo==='VEHICULO')cnt.pir++;
+  if(d.tipo==='TIMBRE')cnt.tmb++;
+  actualizarStats();renderEventos();
+  if(esNuevo){
+    mostrarAlerta(d);
+    if(navigator.vibrate)navigator.vibrate(d.tipo==='TIMBRE'?[200,100,200,100,400]:[150,80,150]);
+  }
+}
+
+// ── Banner alerta ─────────────────────────────────────────
+function mostrarAlerta(d){
+  var info=T(d.tipo);
+  var hora=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('a-icon').innerHTML=info.icon;
+  document.getElementById('a-title').textContent=info.label.toUpperCase();
+  document.getElementById('a-sub').textContent=d.nodo+' \u00b7 RSSI '+d.rssi+'dBm \u00b7 Bat '+d.bat+'%';
+  document.getElementById('a-time').textContent=hora;
+  document.getElementById('alert-box').className='alert '+info.cls;
+  var w=document.getElementById('alert-wrap');
+  w.classList.remove('show');
+  requestAnimationFrame(function(){w.classList.add('show');});
+  clearTimeout(alertTmr);
+  alertTmr=setTimeout(function(){document.getElementById('alert-wrap').classList.remove('show');},8000);
+}
+
+// ── Web Push nativo ───────────────────────────────────────
+async function registrarSW(){
+  if(!('serviceWorker' in navigator)||!('PushManager' in window)){
+    setPill('p-push','fail','Push no soportado');return;
+  }
+  try{
+    swReg = await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+    await navigator.serviceWorker.ready;
+    console.log('SW registrado');
+    comprobarEstadoPush();
+  }catch(e){
+    setPill('p-push','fail','SW error');console.error(e);
+  }
+}
+
+function comprobarEstadoPush(){
+  if(Notification.permission==='granted'){
+    // Ya tiene permiso — suscribir si no lo está
+    suscribirPush(false);
+  } else if(Notification.permission==='default'){
+    // Mostrar card de invitación
+    document.getElementById('push-card').classList.add('show');
+    document.getElementById('bell-btn').style.display='flex';
+    setPill('p-push','warn','Toca \ud83d\udd14 para activar');
+  } else {
+    // Denegado
+    setPill('p-push','fail','Push bloqueado en Chrome');
+  }
+}
+
+async function activarPush(){
+  var perm = await Notification.requestPermission();
+  if(perm==='granted'){
+    document.getElementById('push-card').classList.remove('show');
+    document.getElementById('bell-btn').style.display='none';
+    await suscribirPush(true);
+  } else {
+    setPill('p-push','fail','Permiso denegado');
+  }
+}
+
+async function suscribirPush(esNueva){
+  if(!swReg||!workerUrl){
+    setPill('p-push','warn','Falta URL Worker');
+    if(!workerUrl) document.getElementById('push-card').classList.remove('show');
+    return;
+  }
+  try{
+    // Convertir VAPID public key a Uint8Array
+    var key = urlBase64ToUint8Array(VAPID_PUB);
+    // Suscribir al push manager del navegador (FCM)
+    var sub = await swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: key
+    });
+    // Enviar suscripción al Cloudflare Worker para guardarla
+    var resp = await fetch(workerUrl+'/subscribe',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({subscription: sub.toJSON()})
+    });
+    var data = await resp.json();
+    if(data.ok){
+      setPill('p-push','ok','Push activo');
+      document.getElementById('push-card').classList.remove('show');
+      document.getElementById('bell-btn').style.display='none';
+      if(esNueva) console.log('Push suscrito, key:',data.key);
+    }else{
+      setPill('p-push','fail','Error suscripci\u00f3n');
+    }
+  }catch(e){
+    console.error('Push error:',e);
+    setPill('p-push','fail','Error push');
+  }
+}
+
+function urlBase64ToUint8Array(b64){
+  var pad = '='.repeat((4-b64.length%4)%4);
+  var base64 = (b64+pad).replace(/-/g,'+').replace(/_/g,'/');
+  var raw = atob(base64);
+  var arr = new Uint8Array(raw.length);
+  for(var i=0;i<raw.length;i++) arr[i]=raw.charCodeAt(i);
+  return arr;
+}
+
+// ── Render ────────────────────────────────────────────────
+function tRel(ts){
+  var s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'hace '+s+'s';
+  if(s<3600)return'hace '+Math.floor(s/60)+'min';
+  if(s<86400)return'hace '+Math.floor(s/3600)+'h';
+  return'hace '+Math.floor(s/86400)+'d';
+}
+function renderEventos(){
+  var el=document.getElementById('ev-list');
+  var total=events.length;
+  document.getElementById('ev-count').textContent=total?total+' guardados':'';
+  if(!total){
+    el.innerHTML='<div class="empty"><strong>&#128225;</strong>Sin eventos guardados.<br>Los pr\u00f3ximos eventos aparecer\u00e1n aqu\u00ed<br>y se mantendr\u00e1n aunque cierres la app.</div>';
+    return;
+  }
+  el.innerHTML=events.slice(0,60).map(function(e,i){
+    var info=T(e.tipo);
+    var ts=new Date(e.localTs);
+    var hora=ts.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    var fecha=ts.toLocaleDateString('es',{day:'2-digit',month:'2-digit'});
+    var hoy=new Date().toLocaleDateString('es',{day:'2-digit',month:'2-digit'});
+    var cuando=fecha===hoy?hora:fecha+' '+hora;
+    return '<div class="ev'+(e.esNuevo&&i<3?' new':'')+'"><div class="ev-icon">'+info.icon+'</div>'+
+      '<div class="ev-body"><div class="ev-tipo" style="color:'+info.color+'">'+info.label+'</div>'+
+      '<div class="ev-meta"><span>'+e.nodo+'</span><span class="rb">'+e.rssi+'dBm</span></div></div>'+
+      '<div class="ev-right"><div class="ev-time">'+cuando+'</div>'+
+      '<div class="ev-bat">&#128267;'+e.bat+'%</div>'+
+      '<div class="ev-ago">'+tRel(e.localTs)+'</div></div></div>';
+  }).join('');
+}
+setInterval(function(){if(events.length)renderEventos();},30000);
+function actualizarStats(){
+  document.getElementById('s-tot').textContent=cnt.tot;
+  document.getElementById('s-pir').textContent=cnt.pir;
+  document.getElementById('s-tmb').textContent=cnt.tmb;
+}
+function setPill(id,cls,txt){
+  var el=document.getElementById(id);if(!el)return;
+  el.className='pill '+cls;
+  el.innerHTML='<div class="dot"></div><span>'+txt+'</span>';
+}
+function setOffline(v){document.getElementById('offline').classList.toggle('show',v);}
+
+document.addEventListener('visibilitychange',function(){
+  if(!document.hidden&&client&&!client.connected)mqttConectar();
+});
+
+// Init
+cargarEventos();
+registrarSW();
+if(creds)mqttConectar();
+else{setPill('p-conn','warn','Configurar \u2699');document.getElementById('drawer').classList.add('open');}
+</script>
+</body>
+</html>
